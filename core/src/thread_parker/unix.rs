@@ -9,7 +9,7 @@ use std::cell::{Cell, UnsafeCell};
 use std::time::{Duration, Instant};
 use libc;
 use std::mem;
-#[cfg(any(target_os = "macos", target_os = "ios"))]
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "watchos"))]
 use std::ptr;
 
 // Helper type for putting a thread to sleep until some other thread wakes it up
@@ -31,9 +31,9 @@ impl ThreadParker {
     }
 
     // Initializes the condvar to use CLOCK_MONOTONIC instead of CLOCK_REALTIME.
-    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "watchos", target_os = "android"))]
     unsafe fn init(&self) {}
-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "watchos", target_os = "android")))]
     unsafe fn init(&self) {
         let mut attr: libc::pthread_condattr_t = mem::uninitialized();
         let r = libc::pthread_condattr_init(&mut attr);
@@ -177,7 +177,7 @@ impl UnparkHandle {
 }
 
 // Returns the current time on the clock used by pthread_cond_t as a timespec.
-#[cfg(any(target_os = "macos", target_os = "ios"))]
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "watchos"))]
 unsafe fn timespec_now() -> libc::timespec {
     let mut now: libc::timeval = mem::uninitialized();
     let r = libc::gettimeofday(&mut now, ptr::null_mut());
@@ -187,7 +187,7 @@ unsafe fn timespec_now() -> libc::timespec {
         tv_nsec: now.tv_usec as libc::c_long * 1000,
     }
 }
-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "watchos")))]
 unsafe fn timespec_now() -> libc::timespec {
     let mut now: libc::timespec = mem::uninitialized();
     let clock = if cfg!(target_os = "android") {
